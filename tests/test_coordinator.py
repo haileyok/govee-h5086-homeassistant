@@ -128,6 +128,34 @@ async def test_read_one_notification_ignores_undecodable(
     assert fake_client.disconnected
 
 
+def test_is_recently_polled_window() -> None:
+    """``is_recently_polled`` must close ``scan_interval * 3`` seconds after the last poll.
+
+    Sensors flip to ``unavailable`` only after multiple missed polls, not on a
+    single transient miss. Built via ``__new__`` so we skip the parent class
+    chain entirely and exercise the real property logic.
+    """
+    import time as time_mod
+    from types import SimpleNamespace
+
+    from custom_components.govee_h5086_ble.coordinator import (
+        AVAILABILITY_WINDOW_MULTIPLIER,
+        GoveeH5086Coordinator,
+    )
+
+    coord = GoveeH5086Coordinator.__new__(GoveeH5086Coordinator)
+    coord.entry = SimpleNamespace(options={})  # → scan_interval falls back to default (30)
+
+    coord._last_successful_poll = None
+    assert coord.is_recently_polled is False, "never polled -> unavailable"
+
+    coord._last_successful_poll = time_mod.monotonic() - 10
+    assert coord.is_recently_polled is True, "10s after poll, well inside window"
+
+    coord._last_successful_poll = time_mod.monotonic() - (30 * AVAILABILITY_WINDOW_MULTIPLIER + 5)
+    assert coord.is_recently_polled is False, "past 3*scan_interval -> unavailable"
+
+
 def test_coordinator_does_not_shadow_parent_internals() -> None:
     """Regression guard: never redefine the parent's _async_poll / _needs_poll.
 

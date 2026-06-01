@@ -16,7 +16,6 @@ import dataclasses
 import logging
 from collections.abc import Callable
 
-from homeassistant.components import bluetooth
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -150,18 +149,16 @@ class GoveeH5086Sensor(SensorEntity):
 
     @property
     def available(self) -> bool:
-        """Available iff we have a recent reading AND the plug is in BLE range.
+        """Available iff a successful poll has landed within the recent window.
 
-        ``async_address_present`` returns True while HA's bluetooth manager is
-        still seeing advertisements from this address, which is the signal we
-        want: it goes False after the plug stops broadcasting (out of range,
-        unplugged, etc.) without needing a full poll-failure threshold.
+        Tied to the coordinator's own poll-success bookkeeping rather than
+        ``bluetooth.async_address_present`` - the latter is advertisement-
+        bound, so it would mark sensors unavailable even when the timer-
+        driven fallback poll has successfully refreshed our data.
         """
         if self._coordinator.last_reading is None:
             return False
-        return bluetooth.async_address_present(
-            self.hass, self._coordinator.address, connectable=True
-        )
+        return self._coordinator.is_recently_polled
 
     @property
     def native_value(self) -> float | int | None:
