@@ -111,17 +111,40 @@ class GoveeH5086Coordinator(ActiveBluetoothDataUpdateCoordinator[PowerReading | 
         return seconds_since_last_poll >= self.scan_interval
 
     async def _govee_poll(self, service_info: BluetoothServiceInfoBleak) -> PowerReading | None:
-        """Connect, read one notification, disconnect, return the reading."""
+        """Connect, read one notification, disconnect, return the reading.
+
+        Emits one INFO-level log line per poll attempt so the cadence and
+        outcome are visible in the default HA log (no need to enable DEBUG
+        for the whole package). At ``scan_interval=30s`` that's ~2 lines per
+        minute per plug; tune the package log level higher if it gets noisy.
+        """
         ble_device = service_info.device or bluetooth.async_ble_device_from_address(
             self.hass, self.address, connectable=True
         )
         if ble_device is None:
-            _LOGGER.debug("No connectable BLE device available for %s", self.address)
+            _LOGGER.info("Poll [%s]: skipped (no connectable BLE device)", self.address)
             return self._last_reading
 
-        reading = await _read_one_notification(ble_device)
-        if reading is not None:
-            self._last_reading = reading
+        try:
+            reading = await _read_one_notification(ble_device)
+        except Exception as err:
+            _LOGGER.info("Poll [%s]: failed (%s)", self.address, err)
+            raise
+
+        if reading is None:
+            _LOGGER.info("Poll [%s]: no notification within %.1fs", self.address, NOTIFY_TIMEOUT_S)
+            return self._last_reading
+
+        self._last_reading = reading
+        _LOGGER.info(
+            "Poll [%s]: ok  V=%.2fV  I=%.3fA  P=%.2fW  E=%.1fWh  PF=%d%%",
+            self.address,
+            reading.voltage_v,
+            reading.current_a,
+            reading.power_w,
+            reading.accum_wh,
+            reading.power_factor_pct,
+        )
         return self._last_reading
 
 

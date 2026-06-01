@@ -105,14 +105,19 @@ class GoveeH5086ConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: ConfigEntry,
     ) -> OptionsFlow:
-        return GoveeH5086OptionsFlow(config_entry)
+        # HA 2025.12+ made ``OptionsFlow.config_entry`` a read-only property
+        # provided by the base class. Do NOT pass the entry to the constructor
+        # or store it ourselves - the flow manager assigns it.
+        return GoveeH5086OptionsFlow()
 
 
 class GoveeH5086OptionsFlow(OptionsFlow):
-    """Lets the user adjust scan_interval after initial setup."""
+    """Lets the user adjust scan_interval after initial setup.
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        self.config_entry = config_entry
+    Intentionally has no ``__init__``: ``OptionsFlow.config_entry`` is provided
+    by the base class as a property in modern HA, and attempting to set it
+    raises ``AttributeError: property 'config_entry' ... has no setter``.
+    """
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:

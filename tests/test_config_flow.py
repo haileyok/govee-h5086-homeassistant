@@ -143,6 +143,22 @@ async def test_user_flow_aborts_when_nothing_found(hass: HomeAssistant) -> None:
         assert result["reason"] == "no_devices_found"
 
 
+def test_options_flow_does_not_override_init() -> None:
+    """Regression guard: HA 2025.12+ removed the OptionsFlow.config_entry setter.
+
+    A custom ``__init__`` that sets ``self.config_entry`` raises
+    ``AttributeError: property 'config_entry' ... has no setter`` at runtime.
+    The modern pattern is to not override ``__init__`` and rely on the base
+    class's property; this test fails if anyone re-introduces the old shape.
+    """
+    from custom_components.govee_h5086_ble.config_flow import GoveeH5086OptionsFlow
+
+    assert "__init__" not in GoveeH5086OptionsFlow.__dict__, (
+        "GoveeH5086OptionsFlow should not override __init__; rely on the base "
+        "OptionsFlow class for self.config_entry."
+    )
+
+
 @pytest.mark.parametrize(
     ("user_value", "should_accept"),
     [

@@ -1,7 +1,7 @@
 {
   "domain": "govee_h5086_ble",
   "name": "Govee H5086 (Bluetooth)",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "codeowners": ["@haileyelizabeth"],
   "config_flow": true,
   "iot_class": "local_polling",
