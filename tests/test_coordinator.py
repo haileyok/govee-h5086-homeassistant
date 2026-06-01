@@ -1,5 +1,11 @@
 """Tests for the GoveeH5086Coordinator poll cycle.
 
+Includes a regression guard against accidentally redefining
+``ActiveBluetoothDataUpdateCoordinator``'s internal ``_async_poll`` /
+``_needs_poll`` methods - doing so silently breaks the parent class's
+debouncer wiring at runtime (the parent registers ``self._async_poll`` as a
+hassjob and the MRO routes it to our overridden method).
+
 We mock ``bleak_retry_connector.establish_connection`` so the coordinator
 talks to a fake BleakClient that:
   - records ``start_notify`` / ``write_gatt_char`` calls
@@ -16,7 +22,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from custom_components.govee_h5086_ble.const import GOVEE_RECV_CHAR_UUID
-from custom_components.govee_h5086_ble.coordinator import _read_one_notification
+from custom_components.govee_h5086_ble.coordinator import (
+    GoveeH5086Coordinator,
+    _read_one_notification,
+)
 
 # One of the captured ciphertexts from the reverse-engineering session.
 SAMPLE_PACKET_HEX = "39fbaa1dd8d048759bbf90517748e6e368ee4067"
@@ -117,6 +126,24 @@ async def test_read_one_notification_ignores_undecodable(
 
     assert reading is None  # bogus dropped, timeout fired -> None
     assert fake_client.disconnected
+
+
+def test_coordinator_does_not_shadow_parent_internals() -> None:
+    """Regression guard: never redefine the parent's _async_poll / _needs_poll.
+
+    ``ActiveBluetoothDataUpdateCoordinator`` registers its own ``_async_poll``
+    (no args) as a hassjob with its internal debouncer. If our subclass defines
+    a method with the same name, MRO routes the debouncer call to ours and we
+    crash with ``missing 1 required positional argument: 'service_info'``.
+    """
+    own_methods = set(GoveeH5086Coordinator.__dict__.keys())
+    forbidden = {"_async_poll", "_needs_poll"}
+    collisions = own_methods & forbidden
+    assert not collisions, (
+        f"GoveeH5086Coordinator defines {collisions}, which collide with "
+        "ActiveBluetoothDataUpdateCoordinator's internal methods. Use "
+        "differently-prefixed names (e.g. _govee_poll, _govee_needs_poll)."
+    )
 
 
 async def test_read_one_notification_subscribes_to_recv_char(

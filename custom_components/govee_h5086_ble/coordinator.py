@@ -68,8 +68,8 @@ class GoveeH5086Coordinator(ActiveBluetoothDataUpdateCoordinator[PowerReading | 
             hass=hass,
             logger=_LOGGER,
             address=self.address,
-            needs_poll_method=self._needs_poll,
-            poll_method=self._async_poll,
+            needs_poll_method=self._govee_needs_poll,
+            poll_method=self._govee_poll,
             mode=bluetooth.BluetoothScanningMode.ACTIVE,
             connectable=True,
         )
@@ -87,7 +87,13 @@ class GoveeH5086Coordinator(ActiveBluetoothDataUpdateCoordinator[PowerReading | 
     def last_reading(self) -> PowerReading | None:
         return self._last_reading
 
-    def _needs_poll(
+    # IMPORTANT: these helper names are deliberately prefixed with ``_govee_``
+    # to avoid colliding with ``ActiveBluetoothDataUpdateCoordinator``'s own
+    # internal ``_async_poll`` / ``_needs_poll`` methods. The parent class
+    # registers its own ``_async_poll(self)`` (no args) as a hassjob with the
+    # debouncer; if we name our subclass method the same, MRO routes the
+    # debouncer call to OUR method and crashes because the args don't match.
+    def _govee_needs_poll(
         self,
         service_info: BluetoothServiceInfoBleak,
         seconds_since_last_poll: float | None,
@@ -104,7 +110,7 @@ class GoveeH5086Coordinator(ActiveBluetoothDataUpdateCoordinator[PowerReading | 
             return True
         return seconds_since_last_poll >= self.scan_interval
 
-    async def _async_poll(self, service_info: BluetoothServiceInfoBleak) -> PowerReading | None:
+    async def _govee_poll(self, service_info: BluetoothServiceInfoBleak) -> PowerReading | None:
         """Connect, read one notification, disconnect, return the reading."""
         ble_device = service_info.device or bluetooth.async_ble_device_from_address(
             self.hass, self.address, connectable=True
