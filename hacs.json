@@ -1,0 +1,7 @@
+{
+  "name": "Govee H5086 (Bluetooth)",
+  "render_readme": true,
+  "homeassistant": "2025.6.0",
+  "zip_release": false,
+  "content_in_root": false
+}

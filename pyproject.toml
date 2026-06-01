@@ -1,0 +1,42 @@
+[project]
+name = "govee_h5086_ble"
+version = "0.1.0"
+description = "Home Assistant custom integration for Govee H5086 Smart Plug Pro (BLE power monitoring)."
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "MIT" }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+# Exclude exploratory throwaway scripts from linting; they served their
+# purpose during protocol reverse-engineering and aren't shipped.
+extend-exclude = ["scripts", ".venv"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
+  "SIM", # flake8-simplify
+  "RUF",
+]
+ignore = [
+  "E501",  # line too long (formatter handles)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "B017"]  # asserts are expected; blind-except is fine in tests
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra"
+
+[tool.mypy]
+python_version = "3.12"
+strict_optional = true
+ignore_missing_imports = true

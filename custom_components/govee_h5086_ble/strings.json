@@ -1,0 +1,40 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Add Govee H5086 plug **{name}** (address {address}) to Home Assistant?"
+      },
+      "user": {
+        "description": "Pick a Govee H5086 plug to add.",
+        "data": {
+          "address": "Plug"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Plug is already configured.",
+      "no_devices_found": "No new Govee H5086 plugs found nearby.",
+      "not_supported": "Discovered device is not a Govee H5086."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "How often (seconds) should Home Assistant connect to read fresh power data?",
+        "data": {
+          "scan_interval": "Poll interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "voltage": { "name": "Voltage" },
+      "current": { "name": "Current" },
+      "power": { "name": "Power" },
+      "energy": { "name": "Energy" },
+      "power_factor": { "name": "Power factor" }
+    }
+  }
+}

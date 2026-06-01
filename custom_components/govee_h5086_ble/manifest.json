@@ -1,0 +1,19 @@
+{
+  "domain": "govee_h5086_ble",
+  "name": "Govee H5086 (Bluetooth)",
+  "version": "0.1.0",
+  "codeowners": ["@haileyelizabeth"],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "integration_type": "device",
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://github.com/haileyelizabeth/govee-h5086-ble",
+  "issue_tracker": "https://github.com/haileyelizabeth/govee-h5086-ble/issues",
+  "requirements": ["bleak-retry-connector>=4.0.0", "cryptography>=41.0"],
+  "bluetooth": [
+    {
+      "local_name": "GVH5086*",
+      "connectable": true
+    }
+  ]
+}
